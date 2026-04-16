@@ -94,9 +94,12 @@ pip install -r requirements.txt
 
 ## Dataset
 
-The dataset used in this work will be publicly released.
+The dataset consists of **253 egocentric recordings of human activities**, including multimodal data such as video, gaze, IMU, and audio, together with annotated action sequences.
 
-The dataset is organized as a collection of interaction episodes. Each episode corresponds to a recorded human activity sequence.
+It is organized as a collection of interaction episodes, where each episode corresponds to a single recorded activity sequence.
+
+The dataset will be publicly released upon publication.
+
 
 ### Structure
 
@@ -150,15 +153,7 @@ python scripts/eval.py --config configs/eval.yaml
 
 ---
 
-## Dataset
 
-The simulation is based on:
-
-* 253 egocentric videos of human activity
-* multimodal recordings (video, gaze, IMU, audio)
-* annotated action sequences
-
-The dataset will be released upon publication.
 
 ---
 
