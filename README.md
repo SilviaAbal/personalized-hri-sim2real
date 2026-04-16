@@ -92,6 +92,38 @@ pip install -r requirements.txt
 
 ---
 
+## Dataset
+
+The dataset used in this work will be publicly released.
+
+The dataset is organized as a collection of interaction episodes. Each episode corresponds to a recorded human activity sequence.
+
+### Structure
+
+```text id="u6i8qv"
+data/
+├── episode_1/
+│   ├── frame_0000.jpg
+│   ├── frame_0001.jpg
+│   ├── ...
+│   └── labels_updated.pkl
+├── episode_2/
+│   └── ...
+```
+
+### Description
+
+* Each episode consists of a sequence of time steps (`frame_XXXX`)
+* Each frame represents a **processed representation of the scene**, not raw images
+* These representations are obtained from perception modules (e.g., object detection and other feature extractors)
+* The `labels_updated.pkl` file contains the action annotations associated with each sequence
+
+### Notes
+
+* Frames are expected to be temporally ordered
+* Each frame encodes the state information used by the learning algorithm
+* The dataset does not contain raw video, but precomputed features
+---
 ## Usage
 
 ### 1. Simulation Pretraining
