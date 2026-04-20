@@ -22,6 +22,7 @@ As described in the paper, pretrained agents:
 * achieve higher user satisfaction in real-world experiments 
 
 **Note:** This repository focuses on the simulation and training components of the framework. The full real-world robotic system and human-subject experiment infrastructure described in the paper are not included.
+
 ---
 
 ## Method Summary
