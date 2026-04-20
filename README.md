@@ -16,10 +16,12 @@ The system enables robots to anticipate user needs and provide proactive assista
 
 As described in the paper, pretrained agents:
 
-* reduce irrelevant actions by ~50%
-* improve responsiveness
+* reduces unnecessary robot actions
+* improves responsiveness and timing of interventions
+* improves task efficiency by learning when and how to act
 * achieve higher user satisfaction in real-world experiments 
 
+**Note:** This repository focuses on the simulation and training components of the framework. The full real-world robotic system and human-subject experiment infrastructure described in the paper are not included.
 ---
 
 ## Method Summary
@@ -46,11 +48,7 @@ The robot learns **when and what assistance to provide**.
 
 ### 3. Real-World Personalization
 
-Policies are adapted online during interaction with real users:
-
-* lightweight fine-tuning
-* structured exploration strategy
-* user-specific behavior adaptation
+Policies are designed to be adapted online during interaction with real users (not included in this repository).
 
 ---
 
@@ -106,8 +104,8 @@ The dataset will be publicly released upon publication.
 ```text id="u6i8qv"
 data/
 ├── episode_1/
-│   ├── frame_0000.jpg
-│   ├── frame_0001.jpg
+│   ├── frame_0000
+│   ├── frame_0001
 │   ├── ...
 │   └── labels_updated.pkl
 ├── episode_2/
