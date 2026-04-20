@@ -4,7 +4,6 @@ from "Reducing the Sim2Real Gap in Personalized HRI: Simulation-Based Pretrainin
 
 This script supports:
 - training RL agents in simulation
-- fine-tuning with real-world data
 - evaluation of trained models
 
 Usage:
