@@ -1,16 +1,3 @@
-import copy
-import os
-import glob
-import random
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-from itertools import cycle
-from utils import readTestTxt
-from dataloader_profile_person import DataLoaderProfilePerson
-from scipy.interpolate import interp1d
-import torch 
-from stochastic_state_generator_meta_usuario import StochasticEvolution
 
 """
 Simulated Environment for Personalized Human-Robot Interaction (HRI)
@@ -39,6 +26,19 @@ This environment is used for simulation-based pretraining and evaluation.
 It does NOT include real robot execution or human-subject experiment infrastructure.
 """
 
+import copy
+import os
+import glob
+import random
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from itertools import cycle
+from utils import readTestTxt
+from dataloader_profile_person import DataLoaderProfilePerson
+from scipy.interpolate import interp1d
+import torch 
+from stochastic_state_generator_meta_usuario import StochasticEvolution
 
 def resample_vector(vector, new_length):
      """
