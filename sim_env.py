@@ -12,8 +12,41 @@ from scipy.interpolate import interp1d
 import torch 
 from stochastic_state_generator_meta_usuario import StochasticEvolution
 
+"""
+Simulated Environment for Personalized Human-Robot Interaction (HRI)
+
+This module implements a simulation environment used to train and evaluate
+robot decision-making policies from egocentric human activity data.
+
+The environment is based on replaying recorded human interaction episodes,
+where each episode corresponds to a real-world task (e.g., preparing food).
+At each time step, the robot observes a multimodal state representation and
+decides whether and how to assist the human.
+
+Key components:
+- Episode: represents a single recorded interaction sequence
+- AtomicAction: represents a human action segment with optional robot need
+- SimulatedEnv: main environment implementing the interaction dynamics
+- ActionTracker: utility to track temporal action intervals
+
+Main features:
+- Multimodal state (perception features + object state + ASR signals)
+- Simulation of robot execution delays and stochasticity
+- Reward function combining time delay and energy cost
+- Support for anticipatory and reactive robot behaviors
+
+This environment is used for simulation-based pretraining and evaluation.
+It does NOT include real robot execution or human-subject experiment infrastructure.
+"""
+
 
 def resample_vector(vector, new_length):
+     """
+    Resample a 1D vector to a new length using linear interpolation.
+
+    This helper is used to align temporal signals when feature and video
+    sampling rates differ.
+    """
     # Original indices
     original_indices = np.arange(len(vector))
     
@@ -76,6 +109,12 @@ class ActionTracker:
         """
         return self.intervals_by_label
 class AtomicAction():
+    """
+    Represent a single annotated human action segment.
+
+    Each atomic action stores its temporal boundaries, semantic label, involved
+    objects, and whether robot assistance is required.
+    """
 
     def __init__(self, index, actionLabel, objectsLabels, frameInit, frameEnd, requiresRobot, requiredObj, cfg):
 
@@ -107,6 +146,12 @@ class AtomicAction():
         return ""
     
 class Episode():
+    """
+    Represent one recorded interaction episode.
+
+    An episode contains precomputed frame-level features, action annotations,
+    task-level timing information, and metrics accumulated during simulation.
+    """
 
     def __init__(self, folderPath, labelsPath, actions2Remove, robotNeededActions,
                  videoFPS, featFPS, selFeat, cfg):
@@ -310,6 +355,15 @@ class Episode():
         return result
     
     def loadEpisode(self):
+        """
+        Load frame-level features and annotations for a single episode.
+
+        Workflow:
+        1. Load the precomputed per-frame feature vectors.
+        2. Replicate features to match the target video frame rate.
+        3. Parse annotations into atomic actions.
+        4. Remove unsupported actions and adjust the timeline accordingly.
+        """
 
         # 1 - Read frame features
         framePathsList = sorted(glob.glob(os.path.join(self.folderPath, 'frame_*')))
@@ -600,16 +654,15 @@ class Episode():
 
    
 class SimulatedEnv():
-
     """
-    This environment simulates a real robot serving items to a human making different 
-    foods. On each episode, the human is making something to eat (toast, drink, cereals).
-    There are a series of objects in a table where the human is working. This set of 
-    objects changes on each episode (video). There is also a set of objects in the fridge. 
-    This set of objects is always the same for all episodes. The person is wearing glasses
-    with pupil tracking, and an ANN is making some predictions based on the human gaze from
-    current and past time instants. 
-    
+    Replay-based simulation environment for anticipatory robot assistance.
+
+    The environment models a human performing a task while a robot assists by
+    bringing objects when needed. The robot must decide both what action to take
+    and when to take it.
+
+    State inputs are built from precomputed perception outputs rather than raw
+    images, which makes the environment lightweight and reproducible.
     """
 
     def __init__(self, mode, testFile, configuration):
@@ -968,6 +1021,12 @@ class SimulatedEnv():
 
                 
     def buildStateHidden(self, frame):
+        """
+        Build the state representation at a given frame without advancing the environment.
+
+        This method is mainly useful for offline analysis or dataset generation,
+        where a state must be extracted from a specific frame index.
+        """
 
         feat = self.episode.frameFeatures[frame]
         if (self.cfg.NOT_PRED and self.cfg.NOT_REC):
@@ -1019,9 +1078,16 @@ class SimulatedEnv():
         
         
     def buildState(self, randomDelay=30):
+        """
+        Build the current environment state and optionally advance by a small random delay.
 
-        # The random delay is used to avoid always taking the same
-        # frames, either frame 0 or exactly the same reward instants.
+        The delay is used during training to avoid always sampling the exact same
+        decision frames, while ensuring that the simulation does not skip over an
+        upcoming human-need event.
+        """
+
+        # the random delay is there to avoid always taking the same
+        # frames, either the 0 frame or the same exact reward instants.
         # Pass 0 if you want to avoid this random delay
         # random.seed(10)
         
@@ -1137,18 +1203,19 @@ class SimulatedEnv():
         return state, {}
     
     def step(self, action):
-
         """
-        This method receives an action that the agent wants to take and 
-        returns:
-            observation: the next state the agent encounters for taking 'action' (vector)
-            reward: the reward as a result of taking the 'action' (float)
-            terminated: whether the agent has reached terminal state (bool) 
-            truncated: a float indicating a time-limit reached or out of bounds agent that 
-                        makes the environment to finish although a terminal state might no be 
-                        reached
-            info:     a dictionary with auxiliary diagnostic info (like individual reward terms
-                        that are mixed in the final reward)
+        Execute one environment step for a given robot action.
+
+        Depending on the chosen action and the upcoming human needs, the robot may
+        act proactively, remain idle, or trigger a reactive ASR-based correction.
+
+        Returns:
+            observation: next state representation.
+            reward: scalar reward for the selected action.
+            terminated: whether the episode has ended naturally.
+            truncated: whether the episode ended due to an external stop condition.
+            info: dictionary with diagnostic reward terms and timing metrics.
+            actionASR: reactive action triggered by ASR, if any.
         """
         
         # The environment must be reset before starting a new episode
@@ -1311,8 +1378,8 @@ class SimulatedEnv():
 
         """
         This method is called when the robot takes an action that does not cause
-        the human to wait. Maybe because it ends before the next human-needs-assistance 
-        atomic action or because there are no more human-need-assitance moments. 
+        the human to wait. Maybe because it ends before the next human-needs-asistance 
+        atomic action or because there are no more human-need-assistance moments. 
         The action might be useful for the recipe, in which case it gets no penalty, 
         or incorrect, in which case it does get penalty
         """
@@ -1362,9 +1429,8 @@ class SimulatedEnv():
         """
 
         This method is called when the robot takes an action that ends after the
-        human needs assistance. The human may need to wait or not, depending on
-        previous robot actions (i.e., the current objects on the table).
-
+        human needs asistance. Human might need to wait or not, depending on previous
+        robot actions (current objects in table)
         """
         objTaken =self.cfg.ROBOT_ACTIONS_2_OBJECTS[action]
         actionFrame = self.episode.currentFrame
@@ -1435,7 +1501,16 @@ class SimulatedEnv():
         return timeReward, energyReward, reward, nextState, actionASR
 
     def computeReward(self, actionFrame, waitingFrame, objTook, objNeeded, ASR=False, framesNeeded=None):
-        
+        """
+        Compute the reward associated with a robot action.
+
+        The reward combines:
+        - time penalty: how long the human has to wait
+        - energy penalty: cost of incorrect, unnecessary, or impossible actions
+
+        If ASR is triggered, the method also accounts for the corrective robot action.
+        """
+
         timeReward, energyReward, reward = 0,0,0
         lambda_ =self.cfg.FACTOR_ENERGY_PENALTY
 
