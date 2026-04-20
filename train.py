@@ -1,14 +1,20 @@
 """
-Main training and evaluation script for the Personalized HRI Sim2Real framework, 
-from "Reducing the Sim2Real Gap in Personalized HRI: Simulation-Based Pretraining and Real-World Adaptation and Validation" article.
+Training script for the Personalized HRI Sim2Real framework.
 
-This script supports:
-- training RL agents in simulation
-- evaluation of trained models
+This module implements the full training and evaluation pipeline used in the paper:
 
-Usage:
-    python train.py --config 2 
+    "Reducing the Sim2Real Gap in Personalized HRI:
+     Simulation-Based Pretraining and Real-World Adaptation and Validation"
 
+Main functionalities:
+- Train RL agents in a simulation environment built from egocentric data
+- Evaluate learned policies without exploration
+- Support n-step Q-learning and replay memory
+- Handle experiment configuration, logging, and checkpoints
+
+NOTE:
+This script focuses on simulation-based training.
+It does NOT include real robot execution or human-subject experiment infrastructure.
 """
 
 import os
@@ -16,28 +22,28 @@ from sim_env import SimulatedEnv
 import random
 import matplotlib
 matplotlib.use('Agg')
+
+# Ensure deterministic CUDA behavior (important for reproducibility)
 os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 import torch
 import torch.optim as optim
 import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
-from DQN2 import DQN_LSTM_LateFusion,DQN_MLP_LateFusion
+from DQN import DQN_LSTM_LateFusion
 from statTracker import StatTracker
 from memory import ReplayMemory, createTransition
-from utils import saveConfiguration,loadConfiguration,creationSavePath,resumeTraining, initialize_replay_memory, load_replay_memory,save_model, updateHidden, saveCurrentData, loadCurrentData, updateTargetNet, load_policy_net, load_pretrained_model
+from utils import (
+    saveConfiguration, loadConfiguration, creationSavePath,
+    resumeTraining, initialize_replay_memory, save_model,
+    updateHidden, saveCurrentData, loadCurrentData,
+    updateTargetNet, load_policy_net, load_pretrained_model
+)
 
-import pandas as pd
-import re
-
-# import pickle
 import copy 
 import argparse
-import importlib
 import gc 
 import dill as pickle
-
-
 
 def get_num_optimizations(memory_size, batch_size=128, 
                        min_optim=5, max_optim=20, 
@@ -51,13 +57,15 @@ def get_num_optimizations(memory_size, batch_size=128,
      num_optim = int(min_optim + memory_ratio * (max_optim - min_optim))
  
      return num_optim
- 
-
-
 
 def selectAction(state, exp, env, test=False):
     """
-    This function implements an epsilon-greedy policy
+    Select an action using epsilon-greedy or probabilistic exploration.
+
+    - During training: exploration is enabled
+    - During testing: deterministic policy (low epsilon)
+
+    Also masks impossible actions (e.g., objects already on the table).
     """
 
     # 1 - Compute the epsilonTh
@@ -73,13 +81,12 @@ def selectAction(state, exp, env, test=False):
     # 2 - with probability epsTh we take the random action
     r = random.random()
 
-    #Make decisions and advance states for both policy and target
+    # Forward pass (policy + target)
     with torch.no_grad():
         out = policyNet(state)[0]
         _ = targetNet(state)[0]
-        
-    # if NO_IMPOSSIBLE_ACTIONS is True, the system cannot perfom actions that were previouly taken in the same episode 
-    # (current actions only involve taking elements from the fridge, so whenever a object is taken it is impossible to take it again in the same episode)
+
+    # Mask impossible actions (objects already used)
     if cfg.NO_IMPOSSIBLE_ACTIONS:
         objects_in_table = copy.deepcopy(env.oit)
         manipulable_objects = list(cfg.ROBOT_ACTIONS_2_OBJECTS.values())[:-1]
@@ -145,7 +152,7 @@ def nStep(env,exp, action, epoch, epi, ti):
     G = 0
     t = 0
     actionsTaken = {}
-    # actionsASR = {}
+
     
     # the first action is the epsilon greedy action
     sec_actions = []
@@ -210,7 +217,7 @@ def nStep(env,exp, action, epoch, epi, ti):
                 
                 #3. Choose the next action as the optimal one
                 nextAction = out.max(1)[1].view(1,1)
-                # print(f'nextAction: {cfg.ROBOT_ACTIONS_MEANINGS[nextAction.item()]}')
+
                 # 4 - take the a new step
                 sec_actions.append(nextAction.item())
                 prev_frame = copy.deepcopy(env.episode.currentFrame)
@@ -225,7 +232,7 @@ def nStep(env,exp, action, epoch, epi, ti):
                 if cfg.NORMALIZE_REWARD: # Clip the reward if specified in the configuration
                     instant_reward = instant_reward/cfg.maxReward
                 G += (GAMMA**n) * instant_reward
-                # print(f'partial G: {G}')
+
 
     # check if the last n_step ended on a terminal state
     if terminated:
@@ -402,8 +409,6 @@ def stepTest(exp, action, epoch, epi, ti, env, st):
     
     return (nextState, reward, done, t, infoDict['timeReward'], infoDict['energyReward'])
 
-
-
 def train(epoch, exp, save_path):
     
     """
@@ -423,8 +428,6 @@ def train(epoch, exp, save_path):
     policyNet = exp['policyNet'].train()
     targetNet = exp['targetNet']
     exp['stepsDone'] += 1
-
-    
     rm = exp['replayMemory']
 
     # Set division factor for saving model depending on the number of epochs
@@ -454,7 +457,6 @@ def train(epoch, exp, save_path):
             # 3.2 this is the section in charge of generating entries for the replayMemory
             # Here is where you can implement n-step strategies
             (nextState, tHidden, reward, done, stepsTaken, Rt, Re, instant_reward,nextInstant, updateDelay,sec_actions, actionsTaken, actionASR) = nStep(env,exp, action.item(), epoch, epi, t)
-            
             
             exp['updateTarget'] += 1
             
@@ -506,7 +508,6 @@ def train(epoch, exp, save_path):
             if done:    
                 break
         
-
         num_optimizations = cfg.NUM_OPTIMIZATION_PER_STEP
         for it in range(num_optimizations):
         
@@ -649,18 +650,10 @@ def initExperiment(cfg, fold, step, save_path, mode='train'):
     state, info = env.reset()
     state_dimensionality = len(state)
     print(state_dimensionality)
-    
-    if cfg.DQN == 'mlp_latefusion':
-        
-        policyNet = DQN_MLP_LateFusion(state_dimensionality, num_actions, cfg).to(cfg.DEVICE)
-        targetNet = DQN_MLP_LateFusion(state_dimensionality, num_actions, cfg).to(cfg.DEVICE)
-    elif cfg.DQN == 'DQN':
-        policyNet = DQN_LSTM_LateFusion(state_dimensionality, num_actions, cfg).to(cfg.DEVICE)
-        targetNet = DQN_LSTM_LateFusion(state_dimensionality, num_actions, cfg).to(cfg.DEVICE)
 
-    else:  # 'latefusion_lstm' 
-        policyNet = DQN_LSTM_LateFusion(state_dimensionality, num_actions, cfg).to(cfg.DEVICE)
-        targetNet = DQN_LSTM_LateFusion(state_dimensionality, num_actions, cfg).to(cfg.DEVICE)
+    # 'latefusion_lstm' 
+    policyNet = DQN_LSTM_LateFusion(state_dimensionality, num_actions, cfg).to(cfg.DEVICE)
+    targetNet = DQN_LSTM_LateFusion(state_dimensionality, num_actions, cfg).to(cfg.DEVICE)
     # 2 - Initialize DQN networks, optimizer and loss function
     optimizer = optim.AdamW(policyNet.parameters(), lr = cfg.LR,amsgrad=True,weight_decay=1e-4) #1e-4 
     stepsDone = 0
@@ -672,7 +665,6 @@ def initExperiment(cfg, fold, step, save_path, mode='train'):
     
     if cfg.LOAD_MODEL:
         pt_model, robot_execution_times, optimizer = load_pretrained_model(cfg.MODEL_PATH, optimizer, state)
-
 
     #If no previous executions, then initialize stat_trackers
     if stepsDone==0:
@@ -817,8 +809,6 @@ if( __name__ == '__main__' ):
         help='Specify the config file number to use (e.g., 1 for config1.py). Default is 2 (config2.py)'
     )
 
-    
-
     parser.add_argument(
         '--seed',
         type=int,
@@ -826,14 +816,6 @@ if( __name__ == '__main__' ):
         help='Seed of the experiment'
     )
     
-
-    parser.add_argument(
-        '--arch',
-        type=str,
-        default='latefusion_lstm',
-        choices=['latefusion_lstm', 'DQN', 'mlp_latefusion']
-    )
-
     # Parse the arguments
     args = parser.parse_args()
     
