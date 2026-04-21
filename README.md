@@ -79,7 +79,6 @@ statTracker.py   # training/validation statistics tracking
 utils.py         # utility functions
 configs/         # configuration files
 data/            # sample data and dataset instructions
-results/         # logs, metrics, and outputs
 
 
 ```
