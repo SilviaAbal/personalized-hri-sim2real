@@ -73,7 +73,7 @@ These modules operate in a closed-loop interaction pipeline
 train.py         # training script for simulation pretraining
 test.py          # evaluation script
 sim_env.py       # simulation environment
-dqn.py           # Deep Q-Network implementation
+DQN.py           # Deep Q-Network implementation
 memory.py        # replay memory
 utils.py         # utility functions
 configs/         # configuration files
