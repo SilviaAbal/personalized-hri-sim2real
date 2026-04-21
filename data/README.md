@@ -43,18 +43,52 @@ Episode names must match the folder names exactly.
 
 ---
 
+## Configuration
+
+To run the code with the provided sample data, you must correctly set the dataset-related parameters in the configuration file.
+
+The relevant fields are:
+
+```python
+# =========================================================
+# DATASET
+# =========================================================
+DATASET_NAME = 'Dataset'
+
+FIVE_FOLD = False
+FOLDS = ["example_fold.txt"]
+
+ANNOTATIONS_FOLDER = "data/example/"
+LABELS_FILE_NAME = "labels_updated.pkl"
+```
+
+### Notes
+
+* `FOLDS` specifies the file containing the test split.
+  This should match a file inside `data/folds/` (e.g., `example_fold.txt`).
+
+* `ANNOTATIONS_FOLDER` is the path to the dataset root directory containing the episode folders.
+  For the provided samples, this should point to `data/example/`.
+
+* `LABELS_FILE_NAME` must match the annotation file inside each episode folder (`labels_updated.pkl`).
+
+* `FIVE_FOLD` should be set to `False` when using a single split (as in the provided examples).
+
+---
+
 ## Important
 
 * Only a few sample episodes are provided here
 * The code will not reproduce full results without the complete dataset
 * You must provide your own dataset following the same structure
+* Episode names in the fold file must exactly match the directory names
 
 ---
 
 ## Usage
 
-Make sure:
+Before running the code, ensure that:
 
-* Episodes are placed inside `data/`
+* Episodes are placed inside the directory specified by `ANNOTATIONS_FOLDER`
 * The fold file exists in `data/folds/`
-* Episode names in the fold file match the directory names
+* Configuration paths match your local setup
