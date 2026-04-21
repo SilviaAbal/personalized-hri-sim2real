@@ -68,15 +68,19 @@ These modules operate in a closed-loop interaction pipeline
 
 ## Repository Structure
 
+
 ```text
-sim/            # simulation environment (egocentric replay)
-rl/             # reinforcement learning models (RDM)
-perception/     # AOD, HAA, ASR modules
-real/           # real-world interaction and adaptation
-configs/        # experiment configurations
-scripts/        # training and evaluation scripts
-data/           # dataset instructions (not included)
-results/        # logs, metrics, and outputs
+train.py         # training script for simulation pretraining
+test.py          # evaluation script
+sim_env.py       # simulation environment
+dqn.py           # Deep Q-Network implementation
+memory.py        # replay memory
+utils.py         # utility functions
+configs/         # configuration files
+data/            # sample data and dataset instructions
+results/         # logs, metrics, and outputs
+
+
 ```
 
 ---
@@ -133,21 +137,13 @@ data/
 Train the RL agent in the simulation environment:
 
 ```bash
-python scripts/train_sim.py --config configs/sim.yaml
+python train.py --config 1
 ```
 
-### 2. Real-World Fine-Tuning
-
-Adapt the pretrained model to a specific user:
+### 2. Evaluation
 
 ```bash
-python scripts/adapt_real.py --config configs/real.yaml
-```
-
-### 3. Evaluation
-
-```bash
-python scripts/eval.py --config configs/eval.yaml
+python test.py --config 1
 ```
 
 ---
