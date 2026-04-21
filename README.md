@@ -75,6 +75,7 @@ test.py          # evaluation script
 sim_env.py       # simulation environment
 DQN.py           # Deep Q-Network implementation
 memory.py        # replay memory
+statTracker.py   # training/validation statistics tracking
 utils.py         # utility functions
 configs/         # configuration files
 data/            # sample data and dataset instructions
@@ -148,16 +149,12 @@ python test.py --config 1
 
 ---
 
-
-
----
-
 ## Key Contributions
 
-* Egocentric simulation for realistic HRI pretraining
-* RL framework for anticipatory and personalized assistance
-* Sim2Real transfer with real-world validation
-* Hybrid evaluation combining objective metrics and user studies
+* An egocentric replay-based simulation environment for realistic and scalable HRI pretraining
+* A multimodal reinforcement learning framework for anticipatory and personalized robot assistance
+* A sim-to-real training pipeline combining offline pretraining and real-world adaptation
+* Empirical validation with both objective performance metrics and real-user studies
 
 ---
 
