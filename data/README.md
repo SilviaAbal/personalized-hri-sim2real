@@ -1,27 +1,60 @@
-# Data Folder
+# Sample Data
 
-This folder contains **sample data** to illustrate the expected format of the dataset.
+This folder contains **a small subset of example episodes** to illustrate the expected data format.
 
-The full dataset will be publicly released upon publication.
+The full dataset is described in the main repository README and will be publicly released upon publication.
+
+---
 
 ## Structure
 
-* `sample_*/`: Example data instances
-* `folds/test_fold.txt`: Specifies which samples are used for testing
+Each episode follows this structure:
 
-## Fold File Format
+```
+episode_X/
+├── frame_0000
+├── frame_0001
+├── ...
+└── labels_updated.pkl
+```
 
-The file `test_fold.txt` contains a list of sample identifiers (one per line) corresponding to the test split.
+---
 
-Example:
-sample_1
-sample_3
+## Test Split File
+
+The code requires a fold definition file:
+
+```
+data/folds/test_fold.txt
+```
+
+This file specifies which episodes are used for evaluation.
+
+### Format
+
+One episode name per line:
+
+```
+episode_1
+episode_3
+```
+
+Episode names must match the folder names exactly.
+
+---
 
 ## Important
 
-The code expects:
+* Only a few sample episodes are provided here
+* The code will not reproduce full results without the complete dataset
+* You must provide your own dataset following the same structure
 
-* A valid fold file in `data/folds/`
-* Data samples matching the identifiers listed in the fold file
+---
 
-If you use your own dataset, make sure to follow the same structure.
+## Usage
+
+Make sure:
+
+* Episodes are placed inside `data/`
+* The fold file exists in `data/folds/`
+* Episode names in the fold file match the directory names
