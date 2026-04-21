@@ -18,6 +18,8 @@ episode_X/
 └── labels_updated.pkl
 ```
 
+Note: Sample episodes are provided as .zip files and must be extracted before use.
+
 ---
 
 ## Test Split File
