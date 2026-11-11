@@ -1,5 +1,5 @@
 # Personalized HRI Sim2Real
-Official implementation of "Reducing the Sim2Real Gap in Personalized HRI: Simulation-Based Pretraining and Real-World Adaptation and Validation", to appear in ACM THRI.
+Official implementation of "Simulation-Based Pretraining and Real-World Adaptation for Personalized Anticipatory Human–Robot Assistance", currently under review at Frontiers in Robotics and AI.
 ---
 
 ## Overview
